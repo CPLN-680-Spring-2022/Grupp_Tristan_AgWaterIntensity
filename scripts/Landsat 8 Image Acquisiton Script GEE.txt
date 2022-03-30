@@ -1,0 +1,140 @@
+// This is javascript code used in Google Earth Engine. A link to the script can be found here: https://code.earthengine.google.com/ddcba8a20daf1d4d370cfca5ef9aad96
+
+var countries = ee.FeatureCollection('USDOS/LSIB_SIMPLE/2017');
+var Country_array = ['Peru']; //define the two week time range to export one of the images
+var year1 = '2021-12-01';
+var year2 = '2021-12-15';
+
+
+// masking functions
+var getQABits = function(image, start, end, newName) {
+    var pattern = 0;
+    for (var i = start; i <= end; i++) {
+       pattern += Math.pow(2, i);
+    }
+    return image.select([0], [newName])
+                  .bitwiseAnd(pattern)
+                  .rightShift(start);
+};
+var cloud_shadows = function(image) {
+  var QA = image.select(['pixel_qa']);
+  return getQABits(QA, 3,3, 'Cloud_shadows').neq(1);
+};
+var clouds = function(image) {
+  var QA = image.select(['pixel_qa']);
+  return getQABits(QA, 5,5, 'Cloud').neq(1);
+};
+var water = function(image) {
+  var QA = image.select(['pixel_qa']);
+  return getQABits(QA, 2,2, 'Water').neq(1);
+};
+
+//full mask function
+var maskClouds = function(image) {
+  var b = water(image);
+  var cs = cloud_shadows(image);
+  var c = clouds(image);
+  var image1 = image.updateMask(cs);
+  image = image1.updateMask(b);
+  return image.updateMask(c);
+};
+
+var NDVI = function(image) {
+  return image.normalizedDifference(['B5', 'B4']).rename('NDVI');
+};
+
+// A mapping from a common name to the sensor-specific bands.
+var LC8_BANDS = ['B2',   'B3',    'B4',  'B5',  'B6',  'B7', 'B10'];
+var STD_NAMES = ['blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'temp'];
+// Compute a cloud score.  This expects the input image to have the common
+// band names: ["red", "blue", etc], so it can work across sensors.
+var cloudScore = function(img) {
+  // A helper to apply an expression and linearly rescale the output.
+  var rescale = function(img, exp, thresholds) {
+    return img.expression(exp, {img: img})
+        .subtract(thresholds[0]).divide(thresholds[1] - thresholds[0]);
+  };
+
+  // Compute several indicators of cloudiness and take the minimum of them.
+  var score = ee.Image(1.0);
+  // Clouds are reasonably bright in the blue band.
+  score = score.min(rescale(img, 'img.blue', [0.1, 0.3]));
+
+  // Clouds are reasonably bright in all visible bands.
+  score = score.min(rescale(img, 'img.red + img.green + img.blue', [0.2, 0.8]));
+
+  // Clouds are reasonably bright in all infrared bands.
+  score = score.min(
+      rescale(img, 'img.nir + img.swir1 + img.swir2', [0.3, 0.8]));
+
+  // Clouds are reasonably cool in temperature.
+  score = score.min(rescale(img, 'img.temp', [300, 290]));
+
+  // However, clouds are not snow.
+  var ndsi = img.normalizedDifference(['green', 'swir1']);
+  return score.min(rescale(ndsi, 'img', [0.8, 0.6]));
+};
+
+
+// Filter the SR collection to a time-range and add the cloudscore band.
+var landsat = ee.ImageCollection("LANDSAT/LC08/C01/T1_SR")
+    .filterDate(year1, year2)
+    //.filter(ee.Filter.calendarRange(month1, month2,'month'))
+    .map(function(img) {
+      // Invert the cloudscore so 1 is least cloudy, and rename the band.
+      var score = cloudScore(img.select(LC8_BANDS, STD_NAMES));
+      score = ee.Image(1).subtract(score).select([0], ['cloudscore']);
+      return img.addBands(score);
+    });
+//apply spectral response correction, coefficents defined here. These are OLI to ETM+
+var coefficients = {
+  itcps: ee.Image.constant([0.0183, 0.0123, 0.0123, 0.0448, 0.0306, 0.0116, 0])
+             .multiply(10000),
+  slopes: ee.Image.constant([0.8850, 0.9317, 0.9372, 0.8339, 0.8639, 0.9165, 1])
+};
+
+//https://www.sciencedirect.com/science/article/pii/S0034425715302455
+// apply etmtoOli function if I decide to use Landsat 5/7 and Landsat 8; earlier study period
+function etmToOli(image) {
+  return image.select(['B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B10'])
+  //var LC8_BANDS = ['B2',   'B3',    'B4',  'B5',  'B6',  'B7', 'B10'];
+//var STD_NAMES = ['blue', 'green', 'red', 'nir', 'swir1', 'swir2', 'temp'];
+      .multiply(coefficients.slopes)
+      .add(coefficients.itcps)
+      .round()
+      .toShort()
+      .addBands(image.select('pixel_qa'));
+}
+
+// Define function to prepare OLI images for coefficents
+function prepOLI(image) {
+  var orig = image;
+  var image2 = etmToOli(image);
+  return image2;
+  //return ee.Image(image.copyProperties(orig, orig.propertyNames()));
+}
+
+var collection1 = landsat.map(maskClouds); //coefficent harmonization removed here, would normally be mapped here before the median() is taken of the collection
+
+var NDVIreclass = collection1.map(NDVI).median();
+
+
+Country_array.forEach(function(c) {
+  print(c);
+  var sel = countries.filter(ee.Filter.eq('country_na', c));
+    var images = NDVIreclass
+          .clip(sel);
+
+    Export.image.toDrive({
+      image: images,
+      description: 'NDVIreclass_Landsat_coefficients'.concat('_', year1).concat('_', year2).concat('_', c),
+      scale: 30,
+      //fileFormat: 'GeoTIFF',
+      maxPixels: 3784216672400,
+      folder : 'Landsat two week periods - Peru',
+      region: geometry //sel.geometry().bounds()
+      });
+  // display
+ //Map.addLayer(sel, {}, 'shp'.concat('_', c));
+  Map.addLayer(images, {}, 'r'.concat('_', c));
+});
