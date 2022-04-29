@@ -1,0 +1,561 @@
+---
+title: "Ica Ag Water Intensity"
+author: "Tristan Grupp"
+date: "4/1/2022"
+output: html_document
+toc: true
+theme: cosmo
+toc_float: true
+code_folding: hide
+number_sections: FALSE
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r setup packages, message=FALSE, warning=FALSE, include=TRUE, results='hide', cache=TRUE}
+library(rgdal)
+library(raster)
+library(grid)
+library(gridExtra)
+library(parallel)
+library(terra)
+library(sp)
+library(sf)
+library(gdalUtils)
+library(exactextractr)
+library(dplyr)
+library(ggplot2)
+library(zoo)
+library(devtools)
+library(data.table)
+library(stars)
+
+
+mapTheme <- function(base_size = 12) {
+  theme(
+    text = element_text( color = "black"),
+    plot.title = element_text(size = 14,colour = "black"),
+    plot.subtitle=element_text(face="italic"),
+    plot.caption=element_text(hjust=0),
+    axis.ticks = element_blank(),
+    panel.background = element_blank(),axis.title = element_blank(),
+    axis.text = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_rect(colour = "black", fill=NA, size=2)
+  )
+}
+
+palette1 <- c("#f2e9e4","#c9ada7","#9a8c98","#4a4e69","#22223b")
+
+palette2 <- c("#0294A1", "#B5F8FE")
+
+palette3 <- c("#FFA866",  "#F17007", "#43C4DB", "#004CFF")
+
+```
+
+
+## Raster Extract
+```{r RasterExtract, message=FALSE, warning=FALSE, include=FALSE, results='hide', cache=FALSE}
+#Import fields, create two versions for both sensors to create two separate dataframes with identical dimensions
+fieldsLandsat <- st_read("E:/PennSpring2022/Capstone/Ica Images/icafieldsextract2.shp")
+fieldsSentinel <- st_read("E:/PennSpring2022/Capstone/Ica Images/icafieldsextract2.shp")
+
+# Define the Proj.4 spatial reference 
+# http://spatialreference.org/ref/epsg/32718/proj4/
+# https://epsg.io/32718
+sr <- "+proj=utm +zone=18 +south +ellps=WGS84 +datum=WGS84 +units=m +no_defs" 
+
+
+#import the raster data, Sentinel-2 and Landsat 8 NDVI
+ndvi_sentinel_2019_1	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2019_1.tif")
+ndvi_sentinel_2019_2	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2019_2.tif")
+ndvi_sentinel_2019_3	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2019_3.tif")
+ndvi_sentinel_2019_4	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2019_4.tif")
+ndvi_sentinel_2019_5	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2019_5.tif")
+ndvi_sentinel_2019_6	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2019_6.tif")
+ndvi_sentinel_2019_7	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2019_7.tif")
+ndvi_sentinel_2019_8	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2019_8.tif")
+ndvi_sentinel_2019_9	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2019_9.tif")
+ndvi_sentinel_2019_10	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2019_10.tif")
+ndvi_sentinel_2019_11	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2019_11.tif")
+ndvi_sentinel_2019_12	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2019_12.tif")
+ndvi_sentinel_2019_13	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2019_13.tif")
+ndvi_sentinel_2019_14	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2019_14.tif")
+ndvi_sentinel_2019_15	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2019_15.tif")
+ndvi_sentinel_2019_16	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2019_16.tif")
+ndvi_sentinel_2019_17	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2019_17.tif")
+ndvi_sentinel_2019_18	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2019_18.tif")
+ndvi_sentinel_2019_19	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2019_19.tif")
+ndvi_sentinel_2019_20	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2019_20.tif")
+ndvi_sentinel_2019_21	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2019_21.tif")
+ndvi_sentinel_2019_22	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2019_22.tif")
+ndvi_sentinel_2019_23	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2019_23.tif")
+ndvi_sentinel_2019_24	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2019_24.tif")
+
+ndvi_sentinel_2020_1	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2020_1.tif")
+ndvi_sentinel_2020_3	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2020_3.tif")
+ndvi_sentinel_2020_4	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2020_4.tif")
+ndvi_sentinel_2020_5	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2020_5.tif")
+ndvi_sentinel_2020_6	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2020_6.tif")
+ndvi_sentinel_2020_7	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2020_7.tif")
+ndvi_sentinel_2020_8	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2020_8.tif")
+ndvi_sentinel_2020_9	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2020_9.tif")
+ndvi_sentinel_2020_10	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2020_10.tif")
+ndvi_sentinel_2020_11	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2020_11.tif")
+ndvi_sentinel_2020_12	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2020_12.tif")
+ndvi_sentinel_2020_13	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2020_13.tif")
+ndvi_sentinel_2020_14	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2020_14.tif")
+ndvi_sentinel_2020_15	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2020_15.tif")
+ndvi_sentinel_2020_16	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2020_16.tif")
+ndvi_sentinel_2020_17	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2020_17.tif")
+ndvi_sentinel_2020_18	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2020_18.tif")
+ndvi_sentinel_2020_19	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2020_19.tif")
+ndvi_sentinel_2020_20	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2020_20.tif")
+ndvi_sentinel_2020_21	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2020_21.tif")
+ndvi_sentinel_2020_22	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2020_22.tif")
+ndvi_sentinel_2020_23	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2020_23.tif")
+ndvi_sentinel_2020_24	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2020_24.tif")
+
+ndvi_sentinel_2021_1	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2021_1.tif")
+ndvi_sentinel_2021_2	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2021_2.tif")
+ndvi_sentinel_2021_3	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2021_3.tif")
+ndvi_sentinel_2021_4	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2021_4.tif")
+ndvi_sentinel_2021_5	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2021_5.tif")
+ndvi_sentinel_2021_6	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2021_6.tif")
+ndvi_sentinel_2021_7	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2021_7.tif")
+ndvi_sentinel_2021_8	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2021_8.tif")
+ndvi_sentinel_2021_9	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2021_9.tif")
+ndvi_sentinel_2021_10	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2021_10.tif")
+ndvi_sentinel_2021_11	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2021_11.tif")
+ndvi_sentinel_2021_12	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2021_12.tif")
+ndvi_sentinel_2021_13	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2021_13.tif")
+ndvi_sentinel_2021_14	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2021_14.tif")
+ndvi_sentinel_2021_15	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2021_15.tif")
+ndvi_sentinel_2021_16	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2021_16.tif")
+ndvi_sentinel_2021_17	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2021_17.tif")
+ndvi_sentinel_2021_18	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2021_18.tif")
+ndvi_sentinel_2021_19	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2021_19.tif")
+ndvi_sentinel_2021_20	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2021_20.tif")
+ndvi_sentinel_2021_21	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2021_21.tif")
+ndvi_sentinel_2021_22	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2021_22.tif")
+ndvi_sentinel_2021_23	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2021_23.tif")
+ndvi_sentinel_2021_24	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Sentinel/NDVI_Sentinel_2021_24.tif")
+
+ndvi_landsat_2019_1	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2019_1.tif")
+ndvi_landsat_2019_2	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2019_2.tif")
+ndvi_landsat_2019_3	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2019_3.tif")
+ndvi_landsat_2019_4	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2019_4.tif")
+ndvi_landsat_2019_5	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2019_5.tif")
+ndvi_landsat_2019_6	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2019_6.tif")
+ndvi_landsat_2019_7	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2019_7.tif")
+ndvi_landsat_2019_8	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2019_8.tif")
+ndvi_landsat_2019_9	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2019_9.tif")
+ndvi_landsat_2019_10	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2019_10.tif")
+ndvi_landsat_2019_11	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2019_11.tif")
+ndvi_landsat_2019_12	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2019_12.tif")
+ndvi_landsat_2019_13	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2019_13.tif")
+ndvi_landsat_2019_14	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2019_14.tif")
+ndvi_landsat_2019_15	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2019_15.tif")
+ndvi_landsat_2019_16	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2019_16.tif")
+ndvi_landsat_2019_17	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2019_17.tif")
+ndvi_landsat_2019_18	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2019_18.tif")
+ndvi_landsat_2019_19	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2019_19.tif")
+ndvi_landsat_2019_20	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2019_20.tif")
+ndvi_landsat_2019_21	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2019_21.tif")
+ndvi_landsat_2019_22	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2019_22.tif")
+ndvi_landsat_2019_23	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2019_23.tif")
+ndvi_landsat_2019_24	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2019_24.tif")
+
+ndvi_landsat_2020_1	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2020_1.tif")
+ndvi_landsat_2020_2	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2020_2.tif")
+ndvi_landsat_2020_3	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2020_3.tif")
+ndvi_landsat_2020_4	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2020_4.tif")
+ndvi_landsat_2020_5	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2020_5.tif")
+ndvi_landsat_2020_6	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2020_6.tif")
+ndvi_landsat_2020_7	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2020_7.tif")
+ndvi_landsat_2020_8	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2020_8.tif")
+ndvi_landsat_2020_9	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2020_9.tif")
+ndvi_landsat_2020_10	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2020_10.tif")
+ndvi_landsat_2020_11	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2020_11.tif")
+ndvi_landsat_2020_12	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2020_12.tif")
+ndvi_landsat_2020_13	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2020_13.tif")
+ndvi_landsat_2020_14	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2020_14.tif")
+ndvi_landsat_2020_15	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2020_15.tif")
+ndvi_landsat_2020_16	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2020_16.tif")
+ndvi_landsat_2020_17	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2020_17.tif")
+ndvi_landsat_2020_18	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2020_18.tif")
+ndvi_landsat_2020_19	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2020_19.tif")
+ndvi_landsat_2020_20	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2020_20.tif")
+ndvi_landsat_2020_21	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2020_21.tif")
+ndvi_landsat_2020_22	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2020_22.tif")
+ndvi_landsat_2020_23	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2020_23.tif")
+ndvi_landsat_2020_24	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2020_24.tif")
+
+ndvi_landsat_2021_1	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2021_1.tif")
+ndvi_landsat_2021_2	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2021_2.tif")
+ndvi_landsat_2021_3	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2021_3.tif")
+ndvi_landsat_2021_4	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2021_4.tif")
+ndvi_landsat_2021_5	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2021_5.tif")
+ndvi_landsat_2021_6	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2021_6.tif")
+ndvi_landsat_2021_7	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2021_7.tif")
+ndvi_landsat_2021_8	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2021_8.tif")
+ndvi_landsat_2021_9	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2021_9.tif")
+ndvi_landsat_2021_10	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2021_10.tif")
+ndvi_landsat_2021_11	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2021_11.tif")
+ndvi_landsat_2021_12	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2021_12.tif")
+ndvi_landsat_2021_13	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2021_13.tif")
+ndvi_landsat_2021_14	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2021_14.tif")
+ndvi_landsat_2021_15	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2021_15.tif")
+ndvi_landsat_2021_16	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2021_16.tif")
+ndvi_landsat_2021_17	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2021_17.tif")
+ndvi_landsat_2021_18	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2021_18.tif")
+ndvi_landsat_2021_19	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2021_19.tif")
+ndvi_landsat_2021_20	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2021_20.tif")
+ndvi_landsat_2021_21	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2021_21.tif")
+ndvi_landsat_2021_22	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2021_22.tif")
+ndvi_landsat_2021_23	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2021_23.tif")
+ndvi_landsat_2021_24	 <- raster("E:/PennSpring2022/Capstone/Ica Images/Landsat/NDVI_Landsat_2021_24.tif")
+
+#Extract the rasters
+fieldsSentinel$n2019_1	<-exactextractr::exact_extract(ndvi_sentinel_2019_1,	fieldsSentinel, "mean")	
+fieldsSentinel$n2019_2	<-exactextractr::exact_extract(ndvi_sentinel_2019_2,	fieldsSentinel, "mean")	
+fieldsSentinel$n2019_3	<- NaN
+fieldsSentinel$n2019_4	<-exactextractr::exact_extract(ndvi_sentinel_2019_4,	fieldsSentinel, "mean")	
+fieldsSentinel$n2019_5	<-exactextractr::exact_extract(ndvi_sentinel_2019_5,	fieldsSentinel, "mean")	
+fieldsSentinel$n2019_6	<-exactextractr::exact_extract(ndvi_sentinel_2019_6, fieldsSentinel, "mean")	
+fieldsSentinel$n2019_7	<-exactextractr::exact_extract(ndvi_sentinel_2019_7, fieldsSentinel, "mean")	
+fieldsSentinel$n2019_8	<-exactextractr::exact_extract(ndvi_sentinel_2019_8, fieldsSentinel, "mean")	
+fieldsSentinel$n2019_9	<-exactextractr::exact_extract(ndvi_sentinel_2019_9, fieldsSentinel, "mean")	
+fieldsSentinel$n2019_10	<-exactextractr::exact_extract(ndvi_sentinel_2019_10,	fieldsSentinel, "mean")	
+fieldsSentinel$n2019_11	<-exactextractr::exact_extract(ndvi_sentinel_2019_11,	fieldsSentinel, "mean")	
+fieldsSentinel$n2019_12	<-exactextractr::exact_extract(ndvi_sentinel_2019_12,	fieldsSentinel, "mean")	
+fieldsSentinel$n2019_13	<-exactextractr::exact_extract(ndvi_sentinel_2019_13,	fieldsSentinel, "mean")	
+fieldsSentinel$n2019_14	<-exactextractr::exact_extract(ndvi_sentinel_2019_14,	fieldsSentinel, "mean")	
+fieldsSentinel$n2019_15	<-exactextractr::exact_extract(ndvi_sentinel_2019_15,	fieldsSentinel, "mean")	
+fieldsSentinel$n2019_16	<-exactextractr::exact_extract(ndvi_sentinel_2019_16,	fieldsSentinel, "mean")	
+fieldsSentinel$n2019_17	<-exactextractr::exact_extract(ndvi_sentinel_2019_17,	fieldsSentinel, "mean")	
+fieldsSentinel$n2019_18	<-exactextractr::exact_extract(ndvi_sentinel_2019_18,	fieldsSentinel, "mean")	
+fieldsSentinel$n2019_19	<-exactextractr::exact_extract(ndvi_sentinel_2019_19,	fieldsSentinel, "mean")	
+fieldsSentinel$n2019_20	<-exactextractr::exact_extract(ndvi_sentinel_2019_20,	fieldsSentinel, "mean")	
+fieldsSentinel$n2019_21	<-exactextractr::exact_extract(ndvi_sentinel_2019_21,	fieldsSentinel, "mean")	
+fieldsSentinel$n2019_22	<-exactextractr::exact_extract(ndvi_sentinel_2019_22,	fieldsSentinel, "mean")	
+fieldsSentinel$n2019_23	<-exactextractr::exact_extract(ndvi_sentinel_2019_23,	fieldsSentinel, "mean")	
+fieldsSentinel$n2019_24	<-exactextractr::exact_extract(ndvi_sentinel_2019_24,	fieldsSentinel, "mean")	
+
+fieldsSentinel$n2020_1	<-exactextractr::exact_extract(ndvi_sentinel_2020_1,	fieldsSentinel, "mean")	
+fieldsSentinel$n2020_2  <- NaN
+fieldsSentinel$n2020_3	<-exactextractr::exact_extract(ndvi_sentinel_2020_3,	fieldsSentinel, "mean")	
+fieldsSentinel$n2020_4	<-exactextractr::exact_extract(ndvi_sentinel_2020_4,	fieldsSentinel, "mean")	
+fieldsSentinel$n2020_5	<-exactextractr::exact_extract(ndvi_sentinel_2020_5,	fieldsSentinel, "mean")	
+fieldsSentinel$n2020_6	<- NaN
+fieldsSentinel$n2020_7	<-exactextractr::exact_extract(ndvi_sentinel_2020_7, fieldsSentinel, "mean")	
+fieldsSentinel$n2020_8	<-exactextractr::exact_extract(ndvi_sentinel_2020_8, fieldsSentinel, "mean")	
+fieldsSentinel$n2020_9	<-exactextractr::exact_extract(ndvi_sentinel_2020_9, fieldsSentinel, "mean")	
+fieldsSentinel$n2020_10	<-exactextractr::exact_extract(ndvi_sentinel_2020_10,	fieldsSentinel, "mean")	
+fieldsSentinel$n2020_11	<-exactextractr::exact_extract(ndvi_sentinel_2020_11,	fieldsSentinel, "mean")	
+fieldsSentinel$n2020_12	<-exactextractr::exact_extract(ndvi_sentinel_2020_12,	fieldsSentinel, "mean")	
+fieldsSentinel$n2020_13	<-exactextractr::exact_extract(ndvi_sentinel_2020_13,	fieldsSentinel, "mean")	
+fieldsSentinel$n2020_14	<-exactextractr::exact_extract(ndvi_sentinel_2020_14,	fieldsSentinel, "mean")	
+fieldsSentinel$n2020_15	<-exactextractr::exact_extract(ndvi_sentinel_2020_15,	fieldsSentinel, "mean")	
+fieldsSentinel$n2020_16	<-exactextractr::exact_extract(ndvi_sentinel_2020_16,	fieldsSentinel, "mean")	
+fieldsSentinel$n2020_17	<-exactextractr::exact_extract(ndvi_sentinel_2020_17,	fieldsSentinel, "mean")	
+fieldsSentinel$n2020_18	<-exactextractr::exact_extract(ndvi_sentinel_2020_18,	fieldsSentinel, "mean")	
+fieldsSentinel$n2020_19	<-exactextractr::exact_extract(ndvi_sentinel_2020_19,	fieldsSentinel, "mean")	
+fieldsSentinel$n2020_20	<-exactextractr::exact_extract(ndvi_sentinel_2020_20,	fieldsSentinel, "mean")	
+fieldsSentinel$n2020_21	<-exactextractr::exact_extract(ndvi_sentinel_2020_21,	fieldsSentinel, "mean")	
+fieldsSentinel$n2020_22	<-exactextractr::exact_extract(ndvi_sentinel_2020_22,	fieldsSentinel, "mean")	
+fieldsSentinel$n2020_23	<-exactextractr::exact_extract(ndvi_sentinel_2020_23,	fieldsSentinel, "mean")	
+fieldsSentinel$n2020_24	<-exactextractr::exact_extract(ndvi_sentinel_2020_24,	fieldsSentinel, "mean")	
+
+fieldsSentinel$n2021_1	<-exactextractr::exact_extract(ndvi_sentinel_2021_1,	fieldsSentinel, "mean")	
+fieldsSentinel$n2021_2	<-exactextractr::exact_extract(ndvi_sentinel_2021_2,	fieldsSentinel, "mean")	
+fieldsSentinel$n2021_3	<-exactextractr::exact_extract(ndvi_sentinel_2021_3,	fieldsSentinel, "mean")	
+fieldsSentinel$n2021_4	<-exactextractr::exact_extract(ndvi_sentinel_2021_4,	fieldsSentinel, "mean")	
+fieldsSentinel$n2021_5	<-exactextractr::exact_extract(ndvi_sentinel_2021_5,	fieldsSentinel, "mean")	
+fieldsSentinel$n2021_6	<-exactextractr::exact_extract(ndvi_sentinel_2021_6, fieldsSentinel, "mean")	
+fieldsSentinel$n2021_7	<-exactextractr::exact_extract(ndvi_sentinel_2021_7, fieldsSentinel, "mean")	
+fieldsSentinel$n2021_8	<-exactextractr::exact_extract(ndvi_sentinel_2021_8, fieldsSentinel, "mean")	
+fieldsSentinel$n2021_9	<-exactextractr::exact_extract(ndvi_sentinel_2021_9, fieldsSentinel, "mean")	
+fieldsSentinel$n2021_10	<-exactextractr::exact_extract(ndvi_sentinel_2021_10,	fieldsSentinel, "mean")	
+fieldsSentinel$n2021_11	<-exactextractr::exact_extract(ndvi_sentinel_2021_11,	fieldsSentinel, "mean")	
+fieldsSentinel$n2021_12	<-exactextractr::exact_extract(ndvi_sentinel_2021_12,	fieldsSentinel, "mean")	
+fieldsSentinel$n2021_13	<-exactextractr::exact_extract(ndvi_sentinel_2021_13,	fieldsSentinel, "mean")	
+fieldsSentinel$n2021_14	<-exactextractr::exact_extract(ndvi_sentinel_2021_14,	fieldsSentinel, "mean")	
+fieldsSentinel$n2021_15	<-exactextractr::exact_extract(ndvi_sentinel_2021_15,	fieldsSentinel, "mean")	
+fieldsSentinel$n2021_16	<-exactextractr::exact_extract(ndvi_sentinel_2021_16,	fieldsSentinel, "mean")	
+fieldsSentinel$n2021_17	<-exactextractr::exact_extract(ndvi_sentinel_2021_17,	fieldsSentinel, "mean")	
+fieldsSentinel$n2021_18	<-exactextractr::exact_extract(ndvi_sentinel_2021_18,	fieldsSentinel, "mean")	
+fieldsSentinel$n2021_19	<-exactextractr::exact_extract(ndvi_sentinel_2021_19,	fieldsSentinel, "mean")	
+fieldsSentinel$n2021_20	<-exactextractr::exact_extract(ndvi_sentinel_2021_20,	fieldsSentinel, "mean")	
+fieldsSentinel$n2021_21	<-exactextractr::exact_extract(ndvi_sentinel_2021_21,	fieldsSentinel, "mean")	
+fieldsSentinel$n2021_22	<-exactextractr::exact_extract(ndvi_sentinel_2021_22,	fieldsSentinel, "mean")	
+fieldsSentinel$n2021_23	<-exactextractr::exact_extract(ndvi_sentinel_2021_23,	fieldsSentinel, "mean")	
+fieldsSentinel$n2021_24	<-exactextractr::exact_extract(ndvi_sentinel_2021_24,	fieldsSentinel, "mean")	
+
+fieldsLandsat$n2019_1	<-exactextractr::exact_extract(ndvi_landsat_2019_1,	fieldsLandsat, "mean")	
+fieldsLandsat$n2019_2	<-exactextractr::exact_extract(ndvi_landsat_2019_2,	fieldsLandsat, "mean")	
+fieldsLandsat$n2019_3	<-exactextractr::exact_extract(ndvi_landsat_2019_3,	fieldsLandsat, "mean")	
+fieldsLandsat$n2019_4	<- NaN
+fieldsLandsat$n2019_5	<-exactextractr::exact_extract(ndvi_landsat_2019_5,	fieldsLandsat, "mean")	
+fieldsLandsat$n2019_6	<-exactextractr::exact_extract(ndvi_landsat_2019_6, fieldsLandsat, "mean")	
+fieldsLandsat$n2019_7	<-exactextractr::exact_extract(ndvi_landsat_2019_7, fieldsLandsat, "mean")	
+fieldsLandsat$n2019_8	<-exactextractr::exact_extract(ndvi_landsat_2019_8, fieldsLandsat, "mean")	
+fieldsLandsat$n2019_9	<-exactextractr::exact_extract(ndvi_landsat_2019_9, fieldsLandsat, "mean")	
+fieldsLandsat$n2019_10	<-exactextractr::exact_extract(ndvi_landsat_2019_10,	fieldsLandsat, "mean")	
+fieldsLandsat$n2019_11	<-exactextractr::exact_extract(ndvi_landsat_2019_11,	fieldsLandsat, "mean")	
+fieldsLandsat$n2019_12	<-exactextractr::exact_extract(ndvi_landsat_2019_12,	fieldsLandsat, "mean")	
+fieldsLandsat$n2019_13	<-exactextractr::exact_extract(ndvi_landsat_2019_13,	fieldsLandsat, "mean")	
+fieldsLandsat$n2019_14	<-exactextractr::exact_extract(ndvi_landsat_2019_14,	fieldsLandsat, "mean")	
+fieldsLandsat$n2019_15	<-exactextractr::exact_extract(ndvi_landsat_2019_15,	fieldsLandsat, "mean")	
+fieldsLandsat$n2019_16	<-exactextractr::exact_extract(ndvi_landsat_2019_16,	fieldsLandsat, "mean")	
+fieldsLandsat$n2019_17	<-exactextractr::exact_extract(ndvi_landsat_2019_17,	fieldsLandsat, "mean")	
+fieldsLandsat$n2019_18	<-exactextractr::exact_extract(ndvi_landsat_2019_18,	fieldsLandsat, "mean")	
+fieldsLandsat$n2019_19	<-exactextractr::exact_extract(ndvi_landsat_2019_19,	fieldsLandsat, "mean")	
+fieldsLandsat$n2019_20	<-exactextractr::exact_extract(ndvi_landsat_2019_20,	fieldsLandsat, "mean")	
+fieldsLandsat$n2019_21	<-exactextractr::exact_extract(ndvi_landsat_2019_21,	fieldsLandsat, "mean")	
+fieldsLandsat$n2019_22	<-exactextractr::exact_extract(ndvi_landsat_2019_22,	fieldsLandsat, "mean")	
+fieldsLandsat$n2019_23	<-exactextractr::exact_extract(ndvi_landsat_2019_23,	fieldsLandsat, "mean")	
+fieldsLandsat$n2019_24	<-exactextractr::exact_extract(ndvi_landsat_2019_24,	fieldsLandsat, "mean")	
+
+fieldsLandsat$n2020_1	<-exactextractr::exact_extract(ndvi_landsat_2020_1,	fieldsLandsat, "mean")	
+fieldsLandsat$n2020_2	<-exactextractr::exact_extract(ndvi_landsat_2020_2,	fieldsLandsat, "mean")	
+fieldsLandsat$n2020_3	<-exactextractr::exact_extract(ndvi_landsat_2020_3,	fieldsLandsat, "mean")	
+fieldsLandsat$n2020_4	<-exactextractr::exact_extract(ndvi_landsat_2020_4,	fieldsLandsat, "mean")	
+fieldsLandsat$n2020_5	<-exactextractr::exact_extract(ndvi_landsat_2020_5,	fieldsLandsat, "mean")	
+fieldsLandsat$n2020_6	<-exactextractr::exact_extract(ndvi_landsat_2020_6, fieldsLandsat, "mean")	
+fieldsLandsat$n2020_7	<-exactextractr::exact_extract(ndvi_landsat_2020_7, fieldsLandsat, "mean")	
+fieldsLandsat$n2020_8	<-exactextractr::exact_extract(ndvi_landsat_2020_8, fieldsLandsat, "mean")	
+fieldsLandsat$n2020_9	<-exactextractr::exact_extract(ndvi_landsat_2020_9, fieldsLandsat, "mean")	
+fieldsLandsat$n2020_10	<-exactextractr::exact_extract(ndvi_landsat_2020_10,	fieldsLandsat, "mean")	
+fieldsLandsat$n2020_11	<-exactextractr::exact_extract(ndvi_landsat_2020_11,	fieldsLandsat, "mean")	
+fieldsLandsat$n2020_12	<-exactextractr::exact_extract(ndvi_landsat_2020_12,	fieldsLandsat, "mean")	
+fieldsLandsat$n2020_13	<-exactextractr::exact_extract(ndvi_landsat_2020_13,	fieldsLandsat, "mean")	
+fieldsLandsat$n2020_14	<-exactextractr::exact_extract(ndvi_landsat_2020_14,	fieldsLandsat, "mean")	
+fieldsLandsat$n2020_15	<-exactextractr::exact_extract(ndvi_landsat_2020_15,	fieldsLandsat, "mean")	
+fieldsLandsat$n2020_16	<-exactextractr::exact_extract(ndvi_landsat_2020_16,	fieldsLandsat, "mean")	
+fieldsLandsat$n2020_17	<-exactextractr::exact_extract(ndvi_landsat_2020_17,	fieldsLandsat, "mean")	
+fieldsLandsat$n2020_18	<-exactextractr::exact_extract(ndvi_landsat_2020_18,	fieldsLandsat, "mean")	
+fieldsLandsat$n2020_19	<-exactextractr::exact_extract(ndvi_landsat_2020_19,	fieldsLandsat, "mean")	
+fieldsLandsat$n2020_20	<-exactextractr::exact_extract(ndvi_landsat_2020_20,	fieldsLandsat, "mean")	
+fieldsLandsat$n2020_21	<-exactextractr::exact_extract(ndvi_landsat_2020_21,	fieldsLandsat, "mean")	
+fieldsLandsat$n2020_22	<-exactextractr::exact_extract(ndvi_landsat_2020_22,	fieldsLandsat, "mean")	
+fieldsLandsat$n2020_23	<-exactextractr::exact_extract(ndvi_landsat_2020_23,	fieldsLandsat, "mean")	
+fieldsLandsat$n2020_24	<-exactextractr::exact_extract(ndvi_landsat_2020_24,	fieldsLandsat, "mean")	
+
+fieldsLandsat$n2021_1	<-exactextractr::exact_extract(ndvi_landsat_2021_1,	fieldsLandsat, "mean")	
+fieldsLandsat$n2021_2	<-exactextractr::exact_extract(ndvi_landsat_2021_2,	fieldsLandsat, "mean")	
+fieldsLandsat$n2021_3	<-exactextractr::exact_extract(ndvi_landsat_2021_3,	fieldsLandsat, "mean")	
+fieldsLandsat$n2021_4	<-exactextractr::exact_extract(ndvi_landsat_2021_4,	fieldsLandsat, "mean")	
+fieldsLandsat$n2021_5	<-exactextractr::exact_extract(ndvi_landsat_2021_5,	fieldsLandsat, "mean")	
+fieldsLandsat$n2021_6	<-exactextractr::exact_extract(ndvi_landsat_2021_6, fieldsLandsat, "mean")	
+fieldsLandsat$n2021_7	<-exactextractr::exact_extract(ndvi_landsat_2021_7, fieldsLandsat, "mean")	
+fieldsLandsat$n2021_8	<-exactextractr::exact_extract(ndvi_landsat_2021_8, fieldsLandsat, "mean")	
+fieldsLandsat$n2021_9	<-exactextractr::exact_extract(ndvi_landsat_2021_9, fieldsLandsat, "mean")	
+fieldsLandsat$n2021_10	<-exactextractr::exact_extract(ndvi_landsat_2021_10,	fieldsLandsat, "mean")	
+fieldsLandsat$n2021_11	<-exactextractr::exact_extract(ndvi_landsat_2021_11,	fieldsLandsat, "mean")	
+fieldsLandsat$n2021_12	<-exactextractr::exact_extract(ndvi_landsat_2021_12,	fieldsLandsat, "mean")	
+fieldsLandsat$n2021_13	<-exactextractr::exact_extract(ndvi_landsat_2021_13,	fieldsLandsat, "mean")	
+fieldsLandsat$n2021_14	<-exactextractr::exact_extract(ndvi_landsat_2021_14,	fieldsLandsat, "mean")	
+fieldsLandsat$n2021_15	<-exactextractr::exact_extract(ndvi_landsat_2021_15,	fieldsLandsat, "mean")	
+fieldsLandsat$n2021_16	<-exactextractr::exact_extract(ndvi_landsat_2021_16,	fieldsLandsat, "mean")	
+fieldsLandsat$n2021_17	<-exactextractr::exact_extract(ndvi_landsat_2021_17,	fieldsLandsat, "mean")	
+fieldsLandsat$n2021_18	<-exactextractr::exact_extract(ndvi_landsat_2021_18,	fieldsLandsat, "mean")	
+fieldsLandsat$n2021_19	<-exactextractr::exact_extract(ndvi_landsat_2021_19,	fieldsLandsat, "mean")	
+fieldsLandsat$n2021_20	<-exactextractr::exact_extract(ndvi_landsat_2021_20,	fieldsLandsat, "mean")	
+fieldsLandsat$n2021_21	<-exactextractr::exact_extract(ndvi_landsat_2021_21,	fieldsLandsat, "mean")	
+fieldsLandsat$n2021_22	<-exactextractr::exact_extract(ndvi_landsat_2021_22,	fieldsLandsat, "mean")	
+fieldsLandsat$n2021_23	<-exactextractr::exact_extract(ndvi_landsat_2021_23,	fieldsLandsat, "mean")	
+fieldsLandsat$n2021_24	<-exactextractr::exact_extract(ndvi_landsat_2021_24,	fieldsLandsat, "mean")
+
+```
+
+
+## Data Manipulation, Interpolation
+```{r ManipInterp, message=FALSE, warning=FALSE, include=FALSE, results='hide', cache=FALSE}
+
+# merge Landsat and Sentinel dataframes to reduce NAs in composite dataframe
+fieldsLandsat_df <- fieldsLandsat %>% st_drop_geometry()
+fieldsSentinel_df <- fieldsSentinel %>% st_drop_geometry()
+
+fieldscombined <- is.na(fieldsSentinel_df)
+fieldsSentinel_df[fieldscombined] <- fieldsLandsat_df[fieldscombined]
+
+fieldsFilled <- fieldsSentinel_df
+
+# transpose
+fieldsFilled_transposed <- transpose(fieldsFilled)
+
+# get row and colnames in order
+colnames(fieldsFilled_transposed) <- rownames(fieldsFilled)
+rownames(fieldsFilled_transposed) <- colnames(fieldsFilled)
+
+# reinstate first row as header
+names(fieldsFilled_transposed) <- as.matrix(fieldsFilled_transposed[1, ])
+fieldsFilled_transposed <- fieldsFilled_transposed[-1, ]
+fieldsFilled_transposed[] <- lapply(fieldsFilled_transposed, function(x) type.convert(as.character(x)))
+fieldsFilled_transposed
+  
+# linear interpolate over NAs
+fieldsFilled_transposed_interpolated <- na.approx(fieldsFilled_transposed)
+
+# untranspose interpolated dataframe
+fieldsFilled_interpolated <- transpose(fieldsFilled_transposed_interpolated %>% as.data.frame())
+fieldsFilled_transposed_interpolated_df <- fieldsFilled_transposed_interpolated %>% as.data.frame()
+
+```
+
+## Mid-Output
+```{r midoutput, message=FALSE, warning=FALSE, include=FALSE, results='hide', cache=FALSE}
+
+write.csv(fieldsFilled_transposed_interpolated_df,"E:/PennSpring2022/Capstone/fieldsFilledinterpolated.csv", row.names = FALSE)
+
+```
+
+## Reimport Cleaned
+```{r reimport, message=FALSE, warning=FALSE, include=FALSE, results='hide', cache=FALSE}
+
+#reimport data, cleaned in excel; replace NAs on ends that were missed in linear interpolation with closest value 
+fieldsCleaned <- st_read("E:/PennSpring2022/Capstone/fieldsFilledinterpolated_retransposed.csv")
+
+#check to make sure there are no NAs before doing breakpoint detection
+sum(is.na(fieldsCleaned))
+
+#import individual years
+fieldsCleaned2019 <- st_read("E:/PennSpring2022/Capstone/fieldsFilledinterpolated_retransposed_2019.xlsx")
+fieldsCleaned2020 <- st_read("E:/PennSpring2022/Capstone/fieldsFilledinterpolated_retransposed_2020.xlsx")
+fieldsCleaned2021 <- st_read("E:/PennSpring2022/Capstone/fieldsFilledinterpolated_retransposed_2021.xlsx")
+```
+
+## Percent of the year green
+```{r yearndviperc, message=FALSE, warning=FALSE, include=FALSE, results='hide', cache=FALSE}
+fieldsCleaned2021 <- st_read("E:/PennSpring2022/Capstone/fieldsFilledinterpolated_retransposed_2021.xlsx")
+
+fieldsCleaned2021_2 <- fieldsCleaned2021
+
+fieldsCleaned2021_2  <- subset(fieldsCleaned2021_2, select = -label)
+
+
+#fieldsCleaned2021$label <- as.character(fieldsCleaned2021$label)
+
+#fieldsCleaned2021$label <- paste0(fieldsCleaned2021$label, "a")
+
+#fieldsCleaned2021$label <- paste(fieldsCleaned2021$label, "a")
+
+fieldsCleaned2021_70_bin <- fieldsCleaned2021_2
+fieldsCleaned2021_60_bin <- fieldsCleaned2021_2
+fieldsCleaned2021_50_bin <- fieldsCleaned2021_2
+fieldsCleaned2021_40_bin <- fieldsCleaned2021_2
+fieldsCleaned2021_35_bin <- fieldsCleaned2021_2
+fieldsCleaned2021_30_bin <- fieldsCleaned2021_2
+fieldsCleaned2021_25_bin <- fieldsCleaned2021_2
+fieldsCleaned2021_20_bin <- fieldsCleaned2021_2
+
+# trying with dpylr to see if it ignores the label column. It still reclassifies the first label column >:(
+#df <- fieldsCleaned2021_20_bin
+#df <- mutate_all(df, funs(ifelse(. < 0.2, 0, .)))
+#df <- mutate_all(df, funs(ifelse(. > 0.2, 1, .)))
+
+fieldsCleaned2021_20_bin[ fieldsCleaned2021_20_bin<0.2 ] <- 0
+fieldsCleaned2021_20_bin[ fieldsCleaned2021_20_bin>0.2 ] <- 1
+
+fieldsCleaned2021_25_bin[ fieldsCleaned2021_25_bin<0.25 ] <- 0
+fieldsCleaned2021_25_bin[ fieldsCleaned2021_25_bin>0.25 ] <- 1
+
+fieldsCleaned2021_30_bin[ fieldsCleaned2021_30_bin<0.3 ] <- 0
+fieldsCleaned2021_30_bin[ fieldsCleaned2021_30_bin>0.3 ] <- 1
+
+fieldsCleaned2021_35_bin[ fieldsCleaned2021_35_bin<0.35 ] <- 0
+fieldsCleaned2021_35_bin[ fieldsCleaned2021_35_bin>0.35 ] <- 1
+
+fieldsCleaned2021_40_bin[ fieldsCleaned2021_40_bin<0.4 ] <- 0
+fieldsCleaned2021_40_bin[ fieldsCleaned2021_40_bin>0.4 ] <- 1
+
+fieldsCleaned2021_50_bin[ fieldsCleaned2021_50_bin<0.5 ] <- 0
+fieldsCleaned2021_50_bin[ fieldsCleaned2021_50_bin>0.5 ] <- 1
+
+fieldsCleaned2021_60_bin[ fieldsCleaned2021_60_bin<0.6 ] <- 0
+fieldsCleaned2021_60_bin[ fieldsCleaned2021_60_bin>0.6 ] <- 1
+
+fieldsCleaned2021_70_bin[ fieldsCleaned2021_70_bin<0.7 ] <- 0
+fieldsCleaned2021_70_bin[ fieldsCleaned2021_70_bin>0.7 ] <- 1
+
+fieldsCleaned2021_20_bin$sum20 <- rowSums(Filter(is.numeric, fieldsCleaned2021_20_bin))
+fieldsCleaned2021_25_bin$sum25 <- rowSums(Filter(is.numeric, fieldsCleaned2021_25_bin))
+fieldsCleaned2021_30_bin$sum30 <- rowSums(Filter(is.numeric, fieldsCleaned2021_30_bin))
+fieldsCleaned2021_35_bin$sum35 <- rowSums(Filter(is.numeric, fieldsCleaned2021_35_bin))
+fieldsCleaned2021_40_bin$sum40 <- rowSums(Filter(is.numeric, fieldsCleaned2021_40_bin))
+fieldsCleaned2021_50_bin$sum50 <- rowSums(Filter(is.numeric, fieldsCleaned2021_50_bin))
+fieldsCleaned2021_60_bin$sum60 <- rowSums(Filter(is.numeric, fieldsCleaned2021_60_bin))
+fieldsCleaned2021_70_bin$sum70 <- rowSums(Filter(is.numeric, fieldsCleaned2021_70_bin))
+
+fieldsCleaned2021_merge20 <- merge(fieldsCleaned2021, fieldsCleaned2021_20_bin[ , c("sum20")], by=0, all.x=TRUE)  # merge by row names (by=0 or by="row.names")
+fieldsCleaned2021_merge25 <- merge(fieldsCleaned2021, fieldsCleaned2021_25_bin[ , c("sum25")], by=0, all.x=TRUE)
+fieldsCleaned2021_merge30 <- merge(fieldsCleaned2021, fieldsCleaned2021_30_bin[ , c("sum30")], by=0, all.x=TRUE)
+fieldsCleaned2021_merge35 <- merge(fieldsCleaned2021, fieldsCleaned2021_35_bin[ , c("sum35")], by=0, all.x=TRUE)
+fieldsCleaned2021_merge40 <- merge(fieldsCleaned2021, fieldsCleaned2021_40_bin[ , c("sum40")], by=0, all.x=TRUE)
+fieldsCleaned2021_merge50 <- merge(fieldsCleaned2021, fieldsCleaned2021_50_bin[ , c("sum50")], by=0, all.x=TRUE)
+fieldsCleaned2021_merge60 <- merge(fieldsCleaned2021, fieldsCleaned2021_60_bin[ , c("sum60")], by=0, all.x=TRUE)
+fieldsCleaned2021_merge70 <- merge(fieldsCleaned2021, fieldsCleaned2021_70_bin[ , c("sum70")], by=0, all.x=TRUE)
+
+fieldsCleaned2021_merge20$sum20 <- fieldsCleaned2021_merge20$y
+fieldsCleaned2021_merge25$sum25 <- fieldsCleaned2021_merge25$y
+fieldsCleaned2021_merge30$sum30 <- fieldsCleaned2021_merge30$y
+fieldsCleaned2021_merge35$sum35 <- fieldsCleaned2021_merge35$y
+fieldsCleaned2021_merge40$sum40 <- fieldsCleaned2021_merge40$y
+fieldsCleaned2021_merge50$sum50 <- fieldsCleaned2021_merge50$y
+fieldsCleaned2021_merge60$sum60 <- fieldsCleaned2021_merge60$y
+fieldsCleaned2021_merge70$sum70 <- fieldsCleaned2021_merge70$y
+
+fieldsCleaned2021_greennessPercmerge <- merge(fieldsCleaned2021, fieldsCleaned2021_merge20[,c("label","sum20")], by = "label", all.x = TRUE)
+fieldsCleaned2021_greennessPercmerge <- merge(fieldsCleaned2021_greennessPercmerge, fieldsCleaned2021_merge25[,c("label","sum25")], by = "label", all.x = TRUE)
+fieldsCleaned2021_greennessPercmerge <- merge(fieldsCleaned2021_greennessPercmerge, fieldsCleaned2021_merge30[,c("label","sum30")], by = "label", all.x = TRUE)
+fieldsCleaned2021_greennessPercmerge <- merge(fieldsCleaned2021_greennessPercmerge, fieldsCleaned2021_merge35[,c("label","sum35")], by = "label", all.x = TRUE)
+fieldsCleaned2021_greennessPercmerge <- merge(fieldsCleaned2021_greennessPercmerge, fieldsCleaned2021_merge40[,c("label","sum40")], by = "label", all.x = TRUE)
+fieldsCleaned2021_greennessPercmerge <- merge(fieldsCleaned2021_greennessPercmerge, fieldsCleaned2021_merge50[,c("label","sum50")], by = "label", all.x = TRUE)
+fieldsCleaned2021_greennessPercmerge <- merge(fieldsCleaned2021_greennessPercmerge, fieldsCleaned2021_merge60[,c("label","sum60")], by = "label", all.x = TRUE)
+fieldsCleaned2021_greennessPercmerge <- merge(fieldsCleaned2021_greennessPercmerge, fieldsCleaned2021_merge70[,c("label","sum70")], by = "label", all.x = TRUE)
+
+write.csv(fieldsCleaned2021_greennessPercmerge,"E:/PennSpring2022/Capstone/fieldsCleaned2021_greennessPercmerge.csv", row.names = FALSE)
+```
+
+
+## Stars Breakpoint Detection
+```{r Stars, message=FALSE, warning=FALSE, include=FALSE, results='hide', cache=FALSE}
+#Loic D.: You should try to read your data as a stars object, then stars:aggregate by your feature collection red using sf, and finally run breakpoints via stars::st_apply.
+
+fieldsCleaned2019_stars <- st_as_stars(fieldsCleaned2019)
+fieldsCleaned2020_stars <- st_as_stars(fieldsCleaned2020)
+fieldsCleaned2021_stars <- st_as_stars(fieldsCleaned2021)
+
+fieldsCleaned2019_stars_ag <- stars:aggregate(fieldsCleaned2019_stars)
+
+
+```
+
+
+## BFAST Breakpoint Detection
+```{r BFAST, message=FALSE, warning=FALSE, include=FALSE, results='hide', cache=FALSE}
+
+#import individual years
+fieldsCleaned2019 
+fieldsCleaned2020
+fieldsCleaned2021
+
+require(graphics)
+fieldsCleaned2019_nolabel <- subset(fieldsCleaned2019, select = -c(label))
+
+# tranpose dataframe before making it a time series object
+fieldsCleaned2019_nolabel_transpose <- transpose(fieldsCleaned2019_nolabel)
+fieldsCleaned2019_ts <- ts(data = fieldsCleaned2019_nolabel_transpose, start = c(2019, 1), end = c(2019, 24), deltat = 1/24)
+
+library(bfast)
+#first argument in a TS object
+#second argument, h, minimal segment size between potentially detected breaks in the trend model given as fraction relative to the sample size (i.e. the minimal number of observations in each segment divided by the total length of the timeseries). I assume the minimal number of observations for a harvest will be a month, so 2 time columns. 2/24 = 0.0833
+#third argument, season = c("dummy", "harmonic", "none"), I want none for no seasonality
+#fourth argument, breaks, maximum number of breaks that can be calculated. I leave this blank. Original example code: breaks=1. If left blank, then determined by H.
+fieldsCleaned2019_bfast <- bfast(fieldsCleaned2019_ts, h=0.0833, season="none", max.iter=1)
+```
