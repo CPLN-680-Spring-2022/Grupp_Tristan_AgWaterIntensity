@@ -5,7 +5,7 @@ This repository contains the scripts, descriptions, reports and some of the raw 
 1. Main
 - MUSA Capstone Proposal.docx is the original project proposal
 - MUSA Capstone Project Update.docx is the updated project proposal
-- Grupp_Ica Agricultural Intensity_report.docx is the final write-up
+- Grupp_Ica Agricultural Intensity_report.docx is the final write-up. It also contains descriptions for how the segmentation was performed and any analysis, such as ArcGIS geoprocessing, that was not executed in the R markdown.
 
 3. scripts
 - Landsat 8 Image Acquisiton Script GEE.txt is a GEE script used to mask the two week Landsat-8 image collections, calculate NDVI on those collections, and mosaic them with max() for export and use in Ica Ag Water Intensity.Rmd
