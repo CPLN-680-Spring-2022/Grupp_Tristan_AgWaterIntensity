@@ -1,0 +1,41 @@
+//peru geom
+var peru = ee.FeatureCollection('USDOS/LSIB_SIMPLE/2017').filterMetadata('country_na', "equals", 'Peru');
+
+//define year here for export name
+var year = '2020';
+//Filter to year
+var year1 = '2020-01-01';
+var year2 = '2020-12-31';
+//Filter only to summer months
+var month1 = 12;
+var month2 = 12;
+
+var chirps = ee.ImageCollection('UCSB-CHG/CHIRPS/PENTAD')
+    .filterDate(year1, year2)
+    .filter(ee.Filter.calendarRange(month1, month2,'month'))
+    .select('precipitation');
+
+var summertotal = chirps.reduce(ee.Reducer.sum());
+
+//clip to europe
+var summertotal2 = summertotal.clip(ica).float();
+
+//vis
+var palette = ['#ffffcc','#a1dab4','#41b6c4','#2c7fb8','#253494'];
+var visParams = {
+  min:0,
+  max: 200,
+  palette: palette
+};
+Map.addLayer(summertotal2, visParams, 'Total Precipitation');
+
+//export
+ Export.image.toDrive({
+      image: summertotal2,
+      description: 'annualrain'.concat('_', year).concat('_', month1),
+      scale: 5566,
+      fileFormat: 'GeoTIFF',
+      maxPixels: 3784216672400,
+      folder: 'ica',
+      region: ica
+      });
