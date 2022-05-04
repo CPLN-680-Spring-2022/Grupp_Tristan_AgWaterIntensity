@@ -17,3 +17,6 @@ This repository contains the scripts, descriptions, reports and some of the raw 
 3. Raw Data
 - This folder contains "Planet x NICFI Basemap Ica Dates - Sheet1.csv". This file shows the dates of Planet images that are available through Google Earth Engine (GEE). The dates can be used to filter the image collection.
 - The "Ica Rain Tables" folder contains the output of CHIRPS Precipitation process related to the two HydroSHEDS within the Ica Valley. 
+
+4. Figures
+- This folder contains figures, slides, and animations for the project. These files are for data visualization and the communication of project concepts.
