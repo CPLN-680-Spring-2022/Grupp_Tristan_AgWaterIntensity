@@ -1,0 +1,31 @@
+var nicfi = ee.ImageCollection('projects/planet-nicfi/assets/basemaps/americas');
+
+var t1 = '2016-06-01';
+var t2 = '2016-07-31';
+
+// Filter basemaps by date and get the first image from filtered results
+var basemap= nicfi.filter(ee.Filter.date(t1,t2)).first();
+
+Map.centerObject(geometry)
+
+var vis = {"bands":["R","G","B"],"min":64,"max":5454,"gamma":1.8};
+
+Map.addLayer(basemap, vis, '2021-03 mosaic');
+Map.addLayer(
+    basemap.normalizedDifference(['N','R']).rename('NDVI'),
+    {min:-0.55,max:0.8,palette: [
+        '8bc4f9', 'c9995c', 'c7d270','8add60','097210'
+    ]}, 'NDVI', false);
+
+
+var ndvi = basemap.normalizedDifference(['N','R']).rename('NDVI');
+
+ Export.image.toDrive({
+      image: ndvi,
+      description: 'NDVIplanet'.concat('_', t1).concat('_', t2),
+      scale: 5,
+      //fileFormat: 'GeoTIFF',
+      maxPixels: 3784216672400,
+      folder : 'ica water study',
+      region: geometry
+      });
