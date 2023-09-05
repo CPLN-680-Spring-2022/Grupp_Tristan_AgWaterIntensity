@@ -13,6 +13,7 @@ This repository contains the scripts, descriptions, reports and some of the raw 
 - Planet Basemap GEE Export.txt is a GEE for pulling Planet data for potential data fill-in. This was not used in the data fill-in.
 - Precipitation CHRIPS GEE Export.txt is a GEE script that pulls CHIRPS data that was related to each of the HydroSHED basins in the Ica Valley.
 - Ica Ag Water Intensity.Rmd relates the Sentinel-2 and Landsat 8 image mosaics to the segmented field polygons, calculates the NDVI persistence, and contains the code for breakpoint detection.
+- partitioning a time-series with harmonic regression and fourier series, counting local minima.ipynb provides code for counting the number of crop cycles. The model, particularly the Fourier Transform, needs to be adjusted to better capture true local minima and avoid noise.
 
 3. Raw Data
 - This folder contains "Planet x NICFI Basemap Ica Dates - Sheet1.csv". This file shows the dates of Planet images that are available through Google Earth Engine (GEE). The dates can be used to filter the image collection.
